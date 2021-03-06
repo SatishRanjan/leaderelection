@@ -15,7 +15,7 @@ import os
         /leaderelection/candidate_0000000002 watches for deletion of /leaderelection/candidate_0000000001
         /leaderelection/candidate_0000000003 watches for deletion of /leaderelection/candidate_0000000002
 '''
-class LeaderEelector():
+class LeaderElector():
     def __init__(self, leader_election_znode_root_path, candidate_node_name_prefix):       
         self.configure_kazoo_client()
         #The leader will be creating ehemeral sequential znode under this root path       
