@@ -5,7 +5,7 @@
    - [Zookeeper](https://www.apache.org/dyn/closer.cgi/zookeeper/)
    - [Kazooclient](https://kazoo.readthedocs.io/en/latest/install.html)
 
-Install and configure zookeeper on Ubuntu:
+Install and configure zookeeper on Ubuntu:<br/>
 https://linuxconfig.org/how-to-install-and-configure-zookeeper-in-ubuntu-18-04
 
 Zookeeper Refs:<br/>
