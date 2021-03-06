@@ -38,59 +38,62 @@ class LeaderEelector():
         self.kzclient.start()  
     
     def try_elect_leader(self, leader_election_callback, candidate_node_value):
-        #The node value to be stored in the leader candidate znode
-        self.candidate_node_value = candidate_node_value
-        self.create_ephemeral_node_if_not_exists(candidate_node_value)
-        self.leader_election_callback = leader_election_callback
+        try:
+            #The node value to be stored in the leader candidate znode
+            self.candidate_node_value = candidate_node_value
+            self.create_ephemeral_node_if_not_exists(candidate_node_value)
+            self.leader_election_callback = leader_election_callback
 
-        print("The created cadidate leader node path is: {}".format(self.ephemeral_node_path))
-        #Get the list of candidate nodes under /leaderelection
-        #e.g [candidate_0000000002, candidate_0000000001, candidate_0000000003
-        candidate_nodes = self.kzclient.get_children(self.leader_election_znode_root_path)        
-        if candidate_nodes is None or len(candidate_nodes) < 1:
-           print("Nodes count should be  >= 1, at least there should be one active leader candidate, exiting the application!")           
-           os._exit(0)
+            print("The created cadidate leader node path is: {}".format(self.ephemeral_node_path))
+            #Get the list of candidate nodes under /leaderelection
+            #e.g [candidate_0000000002, candidate_0000000001, candidate_0000000003
+            candidate_nodes = self.kzclient.get_children(self.leader_election_znode_root_path)        
+            if candidate_nodes is None or len(candidate_nodes) < 1:
+                print("Nodes count should be  >= 1, at least there should be one active leader candidate, exiting the application!")           
+                os._exit(0)
 
-        #Sort the candidate nodes for the candidates with minimum sequential node appear on the top
-        #e.g [candidate_0000000001, candidate_0000000002, candidate_0000000003
-        candidate_nodes.sort()
-        print("Sorted candidate nodes for the leader election: {}".format(candidate_nodes))
+            #Sort the candidate nodes for the candidates with minimum sequential node appear on the top
+            #e.g [candidate_0000000001, candidate_0000000002, candidate_0000000003
+            candidate_nodes.sort()
+            print("Sorted candidate nodes for the leader election: {}".format(candidate_nodes))
 
-        # If the created ephemeral node path by this leaderelctor object is the node with smallest sequence number
-        # Then this candidate node is the leader and doesn't watch any other candidate node
-        # e.g if this object created /leaderelection/candidate_0000000001 ehemeral sequence node, 
-        # then the server/process/thread holding this object will be the leader
-        # Else, if this object created /leaderelection/candidate_0000000002 node then it'll follow the current leader node /leaderelection/candidate_0000000001    
-        node_to_watch = ""
-        if self.ephemeral_node_path.endswith(candidate_nodes[0]):
-            print("This node is the leader: {}".format(self.ephemeral_node_path))
-            node_to_watch = self.ephemeral_node_path
-            
-        else:                                                                  
-            # this_candidate_node_name = candidate_0000000002
-            # retrived by taking last 10 chracter "0000000002" from ehemeral node created by this object /leaderelection/candidate_0000000002 
-            # and prefixed by "candidate_" which reults in "candidate_0000000002"           
-            this_candidate_node_name = "candidate_" + self.ephemeral_node_path[len(self.ephemeral_node_path)-10:]
+            # If the created ephemeral node path by this leaderelctor object is the node with smallest sequence number
+            # Then this candidate node is the leader and doesn't watch any other candidate node
+            # e.g if this object created /leaderelection/candidate_0000000001 ehemeral sequence node, 
+            # then the server/process/thread holding this object will be the leader
+            # Else, if this object created /leaderelection/candidate_0000000002 node then it'll follow the current leader node /leaderelection/candidate_0000000001    
+            node_to_watch = ""
+            if self.ephemeral_node_path.endswith(candidate_nodes[0]):
+                print("This node is the leader: {}".format(self.ephemeral_node_path))
+                node_to_watch = self.ephemeral_node_path
+                
+            else:                                                                  
+                # this_candidate_node_name = candidate_0000000002
+                # retrived by taking last 10 chracter "0000000002" from ehemeral node created by this object /leaderelection/candidate_0000000002 
+                # and prefixed by "candidate_" which reults in "candidate_0000000002"           
+                this_candidate_node_name = "candidate_" + self.ephemeral_node_path[len(self.ephemeral_node_path)-10:]
 
-            # Get the index location at which this candidate node is located in the list of the candidate nodes
-            this_candidate_node_index = candidate_nodes.index(this_candidate_node_name)
+                # Get the index location at which this candidate node is located in the list of the candidate nodes
+                this_candidate_node_index = candidate_nodes.index(this_candidate_node_name)
 
-            # watch for the candidate node located at the next lower index e.g. candidate "candidate_0000000003" will watch "candidate_0000000001"
-            # candidate "candidate_0000000002" will watch "candidate_0000000001"
-            # and broker "candidate_0000000001" will not watch any other candidate node, as it's the leader
-            node_to_watch_index = this_candidate_node_index - 1
+                # watch for the candidate node located at the next lower index e.g. candidate "candidate_0000000003" will watch "candidate_0000000001"
+                # candidate "candidate_0000000002" will watch "candidate_0000000001"
+                # and broker "candidate_0000000001" will not watch any other candidate node, as it's the leader
+                node_to_watch_index = this_candidate_node_index - 1
 
-            # Construct the node path that will be watched by this leaderelector candidate
-            node_being_followed = self.leader_election_znode_root_path +'/'+ candidate_nodes[node_to_watch_index]
-            node_to_watch = node_being_followed
+                # Construct the node path that will be watched by this leaderelector candidate
+                node_being_followed = self.leader_election_znode_root_path +'/'+ candidate_nodes[node_to_watch_index]
+                node_to_watch = node_being_followed
 
-        # Set a watch on the candidate node by providing a watch function "watch_for_delete", which will be called when the canidate node changes
-        self.kzclient.get(node_to_watch, self.watch_for_delete)
+            # Set a watch on the candidate node by providing a watch function "watch_for_delete", which will be called when the canidate node changes
+            self.kzclient.get(node_to_watch, self.watch_for_delete)
 
-        # Notify the client interested in change in the leader election by calling the provided client callback function and by passing the 
-        # current leader node path as the value if it exists
-        if self.leader_election_callback != None:
-                self.leader_election_callback(self.leader_election_znode_root_path + "/" + candidate_nodes[0], self.get_node_value(self.leader_election_znode_root_path + "/" + candidate_nodes[0]))
+            # Notify the client interested in change in the leader election by calling the provided client callback function and by passing the 
+            # current leader node path as the value if it exists
+            if self.leader_election_callback != None:
+                    self.leader_election_callback(self.leader_election_znode_root_path + "/" + candidate_nodes[0], self.get_node_value(self.leader_election_znode_root_path + "/" + candidate_nodes[0]))
+        except:
+            self.kzclient.stop()
 
     # The callback function passed to the kazoo client to get notified when the node being followed in deleted/value changed
     def watch_for_delete(self, event):
