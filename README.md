@@ -1,4 +1,4 @@
-# Leader election using zookeer
+# Leader election using zookeeper
 
 ##### Pre-requisites
    - [Python3](https://www.python.org/)
