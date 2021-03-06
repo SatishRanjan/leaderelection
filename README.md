@@ -8,6 +8,6 @@
 Install and configure zookeeper on Ubuntu:
 https://linuxconfig.org/how-to-install-and-configure-zookeeper-in-ubuntu-18-04
 
-Zookeeper Refs:
-https://zookeeper.apache.org/doc/r3.3.3/zookeeperStarted.html
+Zookeeper Refs:<br/>
+https://zookeeper.apache.org/doc/r3.3.3/zookeeperStarted.html<br/>
 https://www.tutorialspoint.com/zookeeper/zookeeper_installation.htm
